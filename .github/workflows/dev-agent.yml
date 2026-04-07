@@ -1,0 +1,76 @@
+name: Dev Agent
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  develop:
+    if: github.event.label.name == 'agent:dev'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Configure Git
+        run: |
+          git config user.name "Dev Agent"
+          git config user.email "agent-dev@noreply.github.com"
+
+      - name: Find sprint folder
+        id: sprint
+        run: |
+          SPRINT_DATE=$(ls -d sprints/*/issue_${{ github.event.issue.number }} 2>/dev/null | head -1 | cut -d'/' -f2)
+          echo "date=$SPRINT_DATE" >> $GITHUB_OUTPUT
+
+      - name: Run Dev Agent (Task A)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          SPRINT_DATE: ${{ steps.sprint.outputs.date }}
+          AGENT_ID: "A"
+        run: |
+          # Create agent branch
+          BRANCH="agent/$ISSUE_NUMBER/dev-A-$(echo $ISSUE_TITLE | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | cut -c1-30)"
+          git checkout -b "$BRANCH"
+
+          claude --print \
+            --allowedTools "Read,Write,Edit,Bash,mcp__github__*" \
+            "You are Dev Agent A. Issue #$ISSUE_NUMBER: '$ISSUE_TITLE'.
+
+            Sprint folder: sprints/$SPRINT_DATE/issue_$ISSUE_NUMBER/
+
+            Follow agents/dev_agent.md exactly. Your agent ID is A.
+            Read plan.md to find your specific Task A assignment.
+            Implement only your assigned task.
+            Run 'npm run lint && npm test' and ensure they pass before finishing.
+            Create implementation_A.md in the sprint folder.
+            Create a pull request when done.
+
+            Important: Use branch name: $BRANCH"
+
+          git push origin "$BRANCH" || true
+
+      # Note: In production, Tasks B, C, D would be parallel matrix jobs
+      # For simplicity, this template shows sequential execution.
+      # See the README for how to configure parallel matrix jobs.

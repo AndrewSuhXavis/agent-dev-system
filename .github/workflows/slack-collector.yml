@@ -1,0 +1,99 @@
+name: Slack Messenger Collection Agent
+
+on:
+  schedule:
+    - cron: '0 8 * * 1-5'  # Weekdays at 8:00 AM UTC — runs before daily status report
+  workflow_dispatch:
+    inputs:
+      hours_back:
+        description: 'How many hours back to collect messages'
+        required: false
+        default: '24'
+
+jobs:
+  collect-slack:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          npm install -g @anthropic-ai/claude-code
+          cd scripts && npm install
+
+      - name: Configure Git
+        run: |
+          git config user.name "Slack Collection Agent"
+          git config user.email "agent-slack@noreply.github.com"
+
+      - name: Collect Slack messages
+        id: collect
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          HOURS_BACK: ${{ github.event.inputs.hours_back || '24' }}
+        run: |
+          node scripts/slack_collector.js --hours $HOURS_BACK --output /tmp/slack_messages.json
+          echo "collected=true" >> $GITHUB_OUTPUT
+
+      - name: Analyze and create issues
+        if: steps.collect.outputs.collected == 'true'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TODAY_DATE: ${{ env.TODAY_DATE }}
+        run: |
+          export TODAY_DATE=$(date +%Y-%m-%d)
+
+          # Check if there are messages to analyze
+          if [ ! -s /tmp/slack_messages.json ]; then
+            echo "No messages collected, skipping analysis"
+            exit 0
+          fi
+
+          MESSAGES=$(cat /tmp/slack_messages.json)
+
+          claude --print \
+            --allowedTools "Read,Write,Bash,mcp__github__*" \
+            "You are the Messenger Collection Agent analyzing Slack messages from the last 24 hours.
+
+            Raw messages (JSON):
+            $MESSAGES
+
+            Your task:
+            1. Parse these Slack messages
+            2. Identify action items, decisions, and issues using these patterns:
+               - Explicit: 'TODO:', 'ACTION:', 'ISSUE:', 'we need to', 'someone should'
+               - Decisions: 'we decided', 'agreed to', 'going with'
+               - Questions/Problems: unresolved questions, reported bugs
+
+            3. For each identified item, create a GitHub Issue with:
+               - Title: clear, actionable description
+               - Label: 'from-slack' + appropriate type label (feature/bug/task)
+               - Body including:
+                 * Source: Slack channel name and approximate time
+                 * Context: the relevant conversation snippet
+                 * Action required: what needs to happen
+
+            4. Write a summary to context/slack_digest_$TODAY_DATE.md listing what was processed
+
+            Do NOT create duplicate issues — check existing open issues first.
+            Do NOT create issues for casual conversation or already-resolved items.
+            Only create issues for actionable, unresolved items."
+
+      - name: Commit digest
+        run: |
+          git add context/
+          git diff --staged --quiet || git commit -m "[Agent:Slack] Daily message digest $(date +%Y-%m-%d)"
+          git push

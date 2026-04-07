@@ -1,0 +1,73 @@
+name: Orchestrator Agent
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  orchestrate:
+    # Trigger only when the 'agent:start' label is applied
+    if: github.event.label.name == 'agent:start'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Configure Git
+        run: |
+          git config user.name "Orchestrator Agent"
+          git config user.email "agent-orchestrator@noreply.github.com"
+
+      - name: Run Orchestrator Agent
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          TODAY_DATE: ${{ env.TODAY_DATE }}
+        run: |
+          export TODAY_DATE=$(date +%Y-%m-%d)
+
+          # Build the orchestrator prompt from the agent definition
+          PROMPT=$(cat agents/orchestrator.md)
+
+          # Replace context placeholders
+          PROMPT="${PROMPT/\{ISSUE_NUMBER\}/$ISSUE_NUMBER}"
+          PROMPT="${PROMPT/\{ISSUE_TITLE\}/$ISSUE_TITLE}"
+          PROMPT="${PROMPT/\{TODAY_DATE\}/$TODAY_DATE}"
+
+          # Run Claude Code with the orchestrator prompt
+          claude --print \
+            --allowedTools "Read,Write,Bash,mcp__github__*" \
+            "You are the Orchestrator Agent. Issue #$ISSUE_NUMBER: '$ISSUE_TITLE'.
+
+            Issue body:
+            $ISSUE_BODY
+
+            Today's date: $TODAY_DATE
+
+            Follow the instructions in agents/orchestrator.md exactly.
+            Use the GitHub MCP tools to apply labels and post comments.
+            GITHUB_TOKEN is available in the environment."
+
+      - name: Commit sprint folder
+        run: |
+          git add sprints/
+          git diff --staged --quiet || git commit -m "[Agent:Orchestrator] Initialize sprint folder for issue #${{ github.event.issue.number }}"
+          git push

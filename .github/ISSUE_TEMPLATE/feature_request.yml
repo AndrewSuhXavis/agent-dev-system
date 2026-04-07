@@ -1,0 +1,83 @@
+name: Feature Request
+description: Request a new feature for the agent pipeline to implement
+title: "[Feature] "
+labels: ["feature", "agent:start"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Feature Request
+        Fill out this form to register a feature. Once submitted, the Orchestrator Agent will automatically pick it up.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Feature Summary
+      description: What do you want to build? (1-3 sentences)
+      placeholder: "A clear, concise description of the feature"
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Being Solved
+      description: What user problem or business need does this address?
+      placeholder: "Users currently cannot... / We need this because..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: requirements
+    attributes:
+      label: Functional Requirements
+      description: List the specific behaviors this feature must have
+      placeholder: |
+        - Users must be able to...
+        - The system must...
+        - When X happens, Y should occur
+    validations:
+      required: true
+
+  - type: textarea
+    id: non_requirements
+    attributes:
+      label: Out of Scope
+      description: Explicitly list what this feature should NOT do (helps agents stay focused)
+      placeholder: |
+        - This does NOT need to...
+        - Do not change...
+    validations:
+      required: false
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - High — blocks other work or urgent
+        - Medium — important but not blocking
+        - Low — nice to have
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      description: How will we know this feature is done? Be specific and testable.
+      placeholder: |
+        - [ ] Given X, when Y, then Z
+        - [ ] The API endpoint returns...
+        - [ ] Tests cover...
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Any Slack conversations, design references, or related issues
+      placeholder: "Related to #123, discussed in #dev-channel on..."
+    validations:
+      required: false

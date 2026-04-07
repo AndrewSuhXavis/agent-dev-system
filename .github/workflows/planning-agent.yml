@@ -1,0 +1,73 @@
+name: Planning Agent
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  plan:
+    if: github.event.label.name == 'agent:planning'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Configure Git
+        run: |
+          git config user.name "Planning Agent"
+          git config user.email "agent-planning@noreply.github.com"
+
+      - name: Find sprint folder
+        id: sprint
+        run: |
+          SPRINT_DATE=$(ls -d sprints/*/issue_${{ github.event.issue.number }} 2>/dev/null | head -1 | cut -d'/' -f2)
+          if [ -z "$SPRINT_DATE" ]; then
+            SPRINT_DATE=$(date +%Y-%m-%d)
+          fi
+          echo "date=$SPRINT_DATE" >> $GITHUB_OUTPUT
+
+      - name: Run Planning Agent
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          SPRINT_DATE: ${{ steps.sprint.outputs.date }}
+        run: |
+          claude --print \
+            --allowedTools "Read,Write,Bash,mcp__github__*" \
+            "You are the Planning Agent. Issue #$ISSUE_NUMBER: '$ISSUE_TITLE'.
+
+            Issue body:
+            $ISSUE_BODY
+
+            Sprint date: $SPRINT_DATE
+            Sprint folder: sprints/$SPRINT_DATE/issue_$ISSUE_NUMBER/
+
+            Follow the instructions in agents/planning_agent.md exactly.
+            After creating plan.md, use the GitHub MCP tools to:
+            1. Apply label 'human-review-needed' to issue #$ISSUE_NUMBER
+            2. Remove label 'agent:planning' from issue #$ISSUE_NUMBER
+            3. Post a comment on the issue summarizing the plan and requesting human review."
+
+      - name: Commit plan
+        run: |
+          git add sprints/
+          git diff --staged --quiet || git commit -m "[Agent:Planning] Technical plan for issue #${{ github.event.issue.number }}"
+          git push

@@ -1,0 +1,64 @@
+name: Schedule Agent (Daily Status)
+
+on:
+  schedule:
+    - cron: '0 9 * * 1-5'  # Weekdays at 9:00 AM UTC (adjust to your timezone)
+  workflow_dispatch:        # Allow manual trigger
+
+jobs:
+  daily-status:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Configure Git
+        run: |
+          git config user.name "Schedule Agent"
+          git config user.email "agent-schedule@noreply.github.com"
+
+      - name: Run Schedule Agent
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_STATUS_WEBHOOK_URL }}
+          TODAY_DATE: ${{ env.TODAY_DATE }}
+        run: |
+          export TODAY_DATE=$(date +%Y-%m-%d)
+          mkdir -p "sprints/$TODAY_DATE"
+
+          claude --print \
+            --allowedTools "Read,Write,Bash,mcp__github__*" \
+            "You are the Schedule Agent. Today is $TODAY_DATE.
+
+            Follow agents/schedule_agent.md exactly.
+            Use GitHub MCP tools to read all open issues with agent: labels.
+            Generate the daily status report and write it to sprints/$TODAY_DATE/daily_status.md.
+
+            After writing the report, send a Slack notification using this webhook:
+            $SLACK_WEBHOOK_URL
+
+            Use Bash to post to Slack:
+            curl -X POST -H 'Content-type: application/json' \\
+              --data '{\"text\": \"YOUR_FORMATTED_MESSAGE\"}' \\
+              $SLACK_WEBHOOK_URL"
+
+      - name: Commit daily report
+        run: |
+          git add sprints/
+          git diff --staged --quiet || git commit -m "[Agent:Schedule] Daily status report $(date +%Y-%m-%d)"
+          git push

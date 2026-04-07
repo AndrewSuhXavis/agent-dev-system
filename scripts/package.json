@@ -1,0 +1,15 @@
+{
+  "name": "agent-dev-system-scripts",
+  "version": "1.0.0",
+  "description": "Scripts for the Agent-Driven Development System",
+  "private": true,
+  "scripts": {
+    "slack-collect": "node slack_collector.js"
+  },
+  "dependencies": {
+    "@slack/web-api": "^7.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

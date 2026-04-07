@@ -1,0 +1,74 @@
+name: Bug Report
+description: Report a bug for the agent pipeline to fix
+title: "[Bug] "
+labels: ["bug", "agent:start"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Bug Report
+        Fill out this form to register a bug. The Orchestrator Agent will analyze and dispatch a fix.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: What is happening that shouldn't be?
+      placeholder: "When I do X, Y happens instead of Z"
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to Reproduce
+      placeholder: |
+        1. Go to...
+        2. Call API with...
+        3. Observe that...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      placeholder: "What should happen instead"
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      placeholder: "What actually happens — include error messages if any"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - Critical — system down or data loss
+        - High — core feature broken, no workaround
+        - Medium — feature degraded, workaround exists
+        - Low — cosmetic or minor inconvenience
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: "Node v20, production / staging / local"
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Logs, screenshots, related issues
+    validations:
+      required: false

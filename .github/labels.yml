@@ -1,0 +1,70 @@
+# GitHub Labels Configuration
+# Apply with: gh label import .github/labels.yml
+
+- name: "agent:start"
+  color: "0075ca"
+  description: "Human registered — triggers Orchestrator Agent"
+
+- name: "agent:planning"
+  color: "1d76db"
+  description: "Triggers Planning Agent"
+
+- name: "agent:dev"
+  color: "0052cc"
+  description: "Triggers Dev Agent group"
+
+- name: "agent:qa"
+  color: "006b75"
+  description: "Triggers QA Agent"
+
+- name: "agent:review"
+  color: "0e8a16"
+  description: "Triggers Review Agents (3 parallel)"
+
+- name: "agent:done"
+  color: "28a745"
+  description: "Full pipeline complete, human approved"
+
+- name: "human-review-needed"
+  color: "e4e669"
+  description: "Waiting for human review or decision"
+
+- name: "from-slack"
+  color: "e11d48"
+  description: "Auto-created from Slack message collection"
+
+- name: "feature"
+  color: "a2eeef"
+  description: "New feature request"
+
+- name: "bug"
+  color: "d73a4a"
+  description: "Something is broken"
+
+- name: "agent:dev-A-done"
+  color: "bfd4f2"
+  description: "Dev Agent A task complete"
+
+- name: "agent:dev-B-done"
+  color: "bfd4f2"
+  description: "Dev Agent B task complete"
+
+- name: "agent:dev-C-done"
+  color: "bfd4f2"
+  description: "Dev Agent C task complete"
+
+- name: "agent:dev-D-done"
+  color: "bfd4f2"
+  description: "Dev Agent D task complete"
+
+- name: "agent:qa-filed"
+  color: "f9d0c4"
+  description: "Bug filed by QA Agent"
+
+- name: "escalated"
+  color: "b60205"
+  description: "Requires urgent human attention"
+
+- name: "architecture-decision"
+  color: "5319e7"
+  description: "Requires an ADR before implementation"
