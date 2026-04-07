@@ -1,0 +1,19 @@
+{
+  "name": "adlc-realtime-bot",
+  "version": "1.0.0",
+  "description": "Real-time Slack conversation agent for ADLC requirements discussion",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.24.0",
+    "@slack/bolt": "^3.17.0",
+    "express": "^4.18.0",
+    "dotenv": "^16.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
