@@ -1,0 +1,3 @@
+# agent-dev-system
+
+Agent-Driven Lifecycle (ADLC) -- scaffold initializing...
