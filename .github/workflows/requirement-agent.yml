@@ -1,0 +1,51 @@
+name: Requirement Agent
+
+on:
+  workflow_dispatch:
+    inputs:
+      channel_id:
+        description: 'Slack channel ID where the discussion is happening'
+        required: true
+        type: string
+      user_name:
+        description: 'Slack username who triggered /adlc'
+        required: true
+        type: string
+      subcommand:
+        description: 'analyze or finalize'
+        required: true
+        default: 'analyze'
+        type: string
+
+jobs:
+  requirement-agent:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Run Requirement Agent
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN:      ${{ secrets.GITHUB_TOKEN }}
+          SLACK_BOT_TOKEN:   ${{ secrets.SLACK_BOT_TOKEN }}
+          CHANNEL_ID:        ${{ inputs.channel_id }}
+          USER_NAME:         ${{ inputs.user_name }}
+          SUBCOMMAND:        ${{ inputs.subcommand }}
+        run: |
+          claude --print \
+            --mcp-config .mcp.json \
+            --system-prompt "$(cat agents/requirement_agent.md)" \
+            "Channel: $CHANNEL_ID | Triggered by: $USER_NAME | Command: $SUBCOMMAND"
