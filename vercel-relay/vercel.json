@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/adlc.js": {
+      "maxDuration": 10
+    }
+  }
+}
